@@ -6,8 +6,13 @@ using namespace web::http;                  // Common HTTP functionality
 using namespace web::http::client;          // HTTP client features
 //using namespace concurrency::streams;       // Asynchronous streams
 
-void initializeAPI() {
-	api_client = http_client(L"http://127.0.0.1:8000");
+void initializeAPI(std::string apiAddress) {
+	//Convert string into wstring using Windows built-in function
+	int wchars_num = MultiByteToWideChar(CP_UTF8, 0, apiAddress.c_str(), -1, NULL, 0);
+	wchar_t* apiAddressW = new wchar_t[wchars_num];
+	MultiByteToWideChar(CP_UTF8, 0, apiAddress.c_str(), -1, apiAddressW, wchars_num);
+
+	api_client = http_client(apiAddressW);
 }
 
 void callAPI(double& input_value, double& output_value) {
@@ -25,7 +30,7 @@ void callAPI(double& input_value, double& output_value) {
 
 int main() {
 	// Source for client library: https://github.com/yhirose/cpp-httplib
-	initializeAPI();
+	initializeAPI("http://127.0.0.1:8000");
 	double input_value = 2.0;
 	double output_value;
 	callAPI(input_value, output_value);
