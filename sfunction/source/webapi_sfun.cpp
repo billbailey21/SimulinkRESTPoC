@@ -109,10 +109,7 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 {
     ssSetSampleTime(S, 0, 1.0);
     ssSetOffsetTime(S, 0, 0.0);
-
 }
-
-
 
 #define MDL_INITIALIZE_CONDITIONS   /* Change to #undef to remove function */
 #if defined(MDL_INITIALIZE_CONDITIONS)
@@ -133,7 +130,7 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 #endif /* MDL_INITIALIZE_CONDITIONS */
 
 
- typedef HRESULT(CALLBACK* proc_api_init)(void);
+ typedef HRESULT(CALLBACK* proc_api_init)(std::string);
  typedef HRESULT(CALLBACK* proc_call_api)(double&, double&);
  HINSTANCE hDLL;               // Handle to DLL
  HINSTANCE altDLL;
@@ -150,11 +147,12 @@ static void mdlInitializeSampleTimes(SimStruct *S)
    */
   static void mdlStart(SimStruct *S)
   {
+	  //Parameter #1: API web address
 	  const mxArray* pArrayValue = ssGetSFcnParam(S, 0);
-	  const char* pCharArray = mxArrayToString(pArrayValue);
-	  std::string string_1(pCharArray);
-	  printf(string_1.c_str());
+	  const char* apiCharArray = mxArrayToString(pArrayValue);
+	  std::string apiAddress(apiCharArray);
 
+	  //Dynamically load DLL files required for REST client
 	  altDLL = LoadLibrary("include\\cpprest_2_10.dll");
 	  hDLL = LoadLibrary("include\\example_api.dll");
       if (hDLL) {
@@ -162,7 +160,7 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 		  callAPI = (proc_call_api)GetProcAddress(hDLL, "callAPI");
 
 		  if (api_init) {
-			  api_init();
+			  api_init(apiAddress);
 		  }
 	  }
 	  else {
@@ -181,9 +179,6 @@ static void mdlInitializeSampleTimes(SimStruct *S)
  */
 static void mdlOutputs(SimStruct *S, int_T tid)
 {    
-    real_T       *y = ssGetOutputPortRealSignal(S,0);
-
-	y[0] = outputValue;
 }
 
 
@@ -199,9 +194,11 @@ static void mdlOutputs(SimStruct *S, int_T tid)
    */
   static void mdlUpdate(SimStruct *S, int_T tid)
   {
+      real_T       *y = ssGetOutputPortRealSignal(S,0);
 	  const real_T* u = (const real_T*)ssGetInputPortRealSignal(S, 0);
 	  inputValue = u[0];
 
+	  //Call web API each time step, if it's available
 	  if ssIsSampleHit(S, 0, tid) {
 		  if (callAPI) {
 			  callAPI(inputValue, outputValue);
@@ -210,6 +207,8 @@ static void mdlOutputs(SimStruct *S, int_T tid)
 			  outputValue = 0.0;
 		  }
 	  }
+      
+      y[0] = outputValue;
   }
 #endif /* MDL_UPDATE */
 
@@ -238,6 +237,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
 static void mdlTerminate(SimStruct *S)
 {
     FreeLibrary(hDLL);
+	FreeLibrary(altDLL);
 }
 
 
