@@ -9,7 +9,7 @@ using namespace web::http::client;          // HTTP client features
 
 __declspec(dllexport) http_client api_client = http_client(L"http://127.0.0.1:8000");
 
-__declspec(dllexport) void initializeAPI();
+__declspec(dllexport) void initializeAPI(std::string);
 __declspec(dllexport) void callAPI(double& input, double& output);
 
 __declspec(dllexport) double cachedOutput = 0.0;
